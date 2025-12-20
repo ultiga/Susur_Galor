@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Family Tree Visualization</title>
-<style>
+    <style>
         :root {
             --bg-color: #f0f4f0;
             --tree-line: #1b5e20;
@@ -18,42 +18,98 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
             margin: 0;
-            padding: 20px;
-            text-align: center;
+            padding: 0;
+            overflow: hidden; /* Prevent default browser scroll, we use custom pan */
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Bar */
+        header {
+            background: white;
+            padding: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         h1 {
             color: var(--text-main);
-            margin-bottom: 10px;
-            font-size: 1.5rem; /* Responsive font size */
-        }
-
-        #controls {
-            margin-bottom: 20px;
+            margin: 0;
+            font-size: 18px;
         }
 
         button {
             background-color: var(--tree-line);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 8px 15px;
             cursor: pointer;
             border-radius: 5px;
-            font-size: 14px;
+            font-size: 13px;
         }
 
-        /* --- DESKTOP TREE LOGIC (Default) --- */
+        /* Zoom Controls (Floating) */
+        .zoom-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            padding: 0;
+        }
+
+        /* Viewport Container for Panning */
+        #viewport {
+            flex-grow: 1;
+            overflow: hidden; /* Hide overflow */
+            cursor: grab;
+            position: relative;
+            background-image: radial-gradient(#ccc 1px, transparent 1px);
+            background-size: 20px 20px; /* Dot grid background */
+        }
+
+        #viewport:active {
+            cursor: grabbing;
+        }
+
+        /* The Tree Content Layer */
+        .tree-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0; /* Scaling happens from top-left */
+            transition: transform 0.1s linear; /* Smooth movement */
+        }
+
+        /* --- TREE CSS LOGIC --- */
         .tree {
             display: flex;
             justify-content: center;
-            padding-top: 20px;
-            overflow-x: auto; /* Allow scrolling if it gets too wide */
+            padding: 50px; /* Padding inside the zoomable area */
+            width: max-content; /* Ensure div is as wide as the tree */
         }
 
         .tree ul {
             padding-top: 20px;
             position: relative;
-            transition: all 0.5s;
             display: flex;
             justify-content: center;
         }
@@ -66,7 +122,7 @@
             padding: 20px 5px 0 5px;
         }
 
-        /* Desktop Connectors */
+        /* Connectors */
         .tree li::before, .tree li::after {
             content: '';
             position: absolute;
@@ -83,27 +139,11 @@
             border-left: 2px solid var(--tree-line);
         }
 
-        .tree li:only-child::after, .tree li:only-child::before {
-            display: none;
-        }
-
-        .tree li:only-child {
-            padding-top: 0;
-        }
-
-        .tree li:first-child::before, .tree li:last-child::after {
-            border: 0 none;
-        }
-
-        .tree li:last-child::before {
-            border-right: 2px solid var(--tree-line);
-            border-radius: 0 5px 0 0;
-        }
-
-        .tree li:first-child::after {
-            border-radius: 5px 0 0 0;
-        }
-
+        .tree li:only-child::after, .tree li:only-child::before { display: none; }
+        .tree li:only-child { padding-top: 0; }
+        .tree li:first-child::before, .tree li:last-child::after { border: 0 none; }
+        .tree li:last-child::before { border-right: 2px solid var(--tree-line); border-radius: 0 5px 0 0; }
+        .tree li:first-child::after { border-radius: 5px 0 0 0; }
         .tree ul ul::before {
             content: '';
             position: absolute;
@@ -114,6 +154,7 @@
             height: 20px;
         }
 
+        /* Member Card */
         .member-container {
             display: inline-flex;
             gap: 10px;
@@ -121,7 +162,6 @@
             padding: 10px;
             border-radius: 10px;
             border: 1px dashed var(--tree-line);
-            align-items: flex-start;
         }
 
         .card {
@@ -130,18 +170,10 @@
             border-radius: 8px;
             padding: 10px;
             width: 160px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            display: inline-block;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             cursor: pointer;
-            transition: transform 0.2s;
             position: relative;
-        }
-
-        .card:hover {
-            transform: scale(1.05);
-            z-index: 10;
         }
 
         .card img {
@@ -154,129 +186,52 @@
             background: #eee;
         }
 
-        .card h3 {
-            margin: 5px 0;
-            font-size: 14px;
-            color: var(--text-main);
-            word-wrap: break-word;
-        }
-        
+        .card h3 { margin: 5px 0; font-size: 14px; color: var(--text-main); }
         .card .title { font-size: 11px; font-weight: bold; color: var(--text-sub); }
         .card .details { font-size: 10px; color: #555; line-height: 1.4; }
         .card .status-dead { color: red; }
         .card .status-alive { color: green; }
 
+        #loading { padding: 20px; text-align: center; }
 
-        /* --- MOBILE OPTIMIZATION (Vertical List View) --- */
-        @media screen and (max-width: 768px) {
-            
-            body {
-                padding: 10px;
-                text-align: left; /* Align left for list view */
-            }
-            
-            h1 { text-align: center; }
-            #controls { text-align: center; }
-
-            /* 1. Reset the Flexbox/Float structure */
-            .tree, .tree ul, .tree li {
-                display: block;
-                width: 100%;
-                padding: 0;
-                margin: 0;
-                float: none;
-                text-align: left;
-            }
-
-            /* 2. Hide the desktop connector lines */
-            .tree li::before, .tree li::after, .tree ul ul::before {
-                display: none;
-            }
-
-            /* 3. Create Vertical Hierarchy (Indentation + Left Line) */
-            .tree ul {
-                padding-left: 20px; /* Indent children */
-                margin-left: 10px;
-                border-left: 2px solid var(--tree-line); /* The thread line */
-            }
-
-            .tree li {
-                padding: 10px 0;
-                position: relative;
-            }
-
-            /* Add a small horizontal dash pointing to the card */
-            .tree li::before {
-                display: block !important;
-                content: '';
-                position: absolute;
-                left: -20px; /* Connect to the border-left of parent UL */
-                top: 45px;   /* Vertically center with the card roughly */
-                width: 20px;
-                border-top: 2px solid var(--tree-line);
-                height: 0;
-            }
-
-            /* 4. Adjust Containers for Mobile Width */
-            .member-container {
-                display: flex;
-                flex-direction: column; /* Stack Spouse below Person */
-                width: 100%;
-                box-sizing: border-box;
-                border: none;
-                background: none;
-                padding: 0;
-                gap: 5px;
-            }
-
-            /* 5. Switch Card to "Row" Layout (Photo Left, Info Right) */
-            .card {
-                width: 100%;
-                max-width: 100%;
-                flex-direction: row; /* Horizontal layout */
-                align-items: center;
-                text-align: left;
-                padding: 10px;
-                box-sizing: border-box;
-            }
-
-            .card img {
-                width: 60px;
-                height: 60px;
-                margin-bottom: 0;
-                margin-right: 15px;
-            }
-
-            .card div {
-                flex: 1; /* Text takes remaining space */
-            }
-            
-            /* Reduce font sizes slightly */
-            .card h3 { font-size: 16px; margin: 0 0 5px 0; }
-            .card .details { font-size: 12px; }
-        }
     </style>
-
-
-
-
 </head>
 <body>
 
-    <h1 id="mainTitle">Family Tree</h1>
-    <div id="controls">
-        <button onclick="resetTree()">Reset to Top Lineage</button>
-    </div>
+    <header>
+        <h1 id="mainTitle">Family Tree</h1>
+        <button onclick="resetTree()">Reset Top</button>
+    </header>
     
-    <div id="loading">Loading Data...</div>
-    <div class="tree" id="treeContainer"></div>
+    <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomIn()">+</button>
+        <button class="zoom-btn" onclick="zoomOut()">-</button>
+        <button class="zoom-btn" onclick="fitToScreen()" title="Fit All">⛶</button>
+    </div>
+
+    <div id="viewport">
+        <div id="treeLayer" class="tree-layer">
+            <div id="loading">Loading Data...</div>
+            <div class="tree" id="treeContainer"></div>
+        </div>
+    </div>
 
     <script>
         // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
         const API_URL = 'https://script.google.com/macros/s/AKfycbxhE4e96J9RkBpFe1wB_ml1vxcARdxPAQC0ef1zEJ1LcDjK9n0vHsurlLN1DXCUsmTq/exec'; 
 
         let rawData = [];
-        let rootName = null;
+        
+        // --- ZOOM & PAN VARIABLES ---
+        let scale = 1;
+        let panning = false;
+        let pointX = 0;
+        let pointY = 0;
+        let startX = 0;
+        let startY = 0;
+
+        const viewport = document.getElementById('viewport');
+        const treeLayer = document.getElementById('treeLayer');
 
         async function init() {
             try {
@@ -284,44 +239,33 @@
                 rawData = await response.json();
                 document.getElementById('loading').style.display = 'none';
                 
-                // Find the absolute root (someone with no father listed in the dataset, or the first one)
-                // For this logic, we will look for unique "Nama Ayah" logic or default to the oldest.
-                // Assuming the first entry or specific logic. 
-                // Let's find unique roots.
-                
-                // Set default root to the first person in the sheet or specific logic
                 if(rawData.length > 0) {
-                   rootName = rawData[0]["Nama Sendiri"]; 
-                   renderTree(rootName);
+                   renderTree(rawData[0]["Nama Sendiri"]);
+                   // Auto fit after a slight delay to allow rendering
+                   setTimeout(fitToScreen, 500); 
                 }
             } catch (error) {
-                document.getElementById('loading').textContent = "Error loading data: " + error.message;
+                document.getElementById('loading').textContent = "Error: " + error.message;
             }
         }
 
+        // --- RENDER LOGIC (Same as before) ---
         function renderTree(focusName) {
             const container = document.getElementById('treeContainer');
             container.innerHTML = '';
             
-            // Filter: If focusName is selected, we show them as root.
-            // But we need to calculate total descendants displayed.
-            
             const treeHtml = buildHierarchyHTML(focusName);
-            
             const ul = document.createElement('ul');
             ul.innerHTML = treeHtml;
             container.appendChild(ul);
 
-            // Update Title
             const count = container.getElementsByClassName('card').length;
-            document.getElementById('mainTitle').textContent = `Family tree of "${focusName}" (${count} displayed)`;
+            document.getElementById('mainTitle').textContent = `Family tree of "${focusName}"`;
         }
 
         function buildHierarchyHTML(personName) {
             const person = rawData.find(p => p["Nama Sendiri"] === personName);
             if (!person) return '';
-
-            // Find Children: People whose "Nama Ayah / Ibu" matches this person's "Nama Sendiri"
             const children = rawData.filter(p => p["Nama Ayah / Ibu"] === person["Nama Sendiri"]);
 
             let html = `<li>
@@ -332,12 +276,9 @@
 
             if (children.length > 0) {
                 html += '<ul>';
-                children.forEach(child => {
-                    html += buildHierarchyHTML(child["Nama Sendiri"]);
-                });
+                children.forEach(child => html += buildHierarchyHTML(child["Nama Sendiri"]));
                 html += '</ul>';
             }
-
             html += '</li>';
             return html;
         }
@@ -345,28 +286,20 @@
         function getSpouseCard(person) {
             const spouseName = person["Nama Pasangan"];
             if(!spouseName) return '';
-
-            // Check if spouse exists as a data entry row
             const spouseData = rawData.find(p => p["Nama Sendiri"] === spouseName);
             
-            if (spouseData) {
-                return createCard(spouseData, true);
-            } else {
-                // If spouse is mentioned but has no own row, create a dummy card
-                return `<div class="card">
+            if (spouseData) return createCard(spouseData, true);
+            return `<div class="card">
                     <img src="https://via.placeholder.com/80?text=No+Img" alt="Spouse">
                     <h3>${spouseName}</h3>
                     <div class="title">Pasangan</div>
                 </div>`;
-            }
         }
 
         function createCard(data, isSpouse = false) {
             const statusClass = (data["Status hidupan"] || '').toLowerCase().includes('meninggal') ? 'status-dead' : 'status-alive';
             const imgUrl = data["URL Gambar"] && data["URL Gambar"].startsWith('http') ? data["URL Gambar"] : 'https://via.placeholder.com/80?text=No+Img';
-            
-            // On click logic: If it's not a spouse card, re-root.
-            const clickAction = isSpouse ? '' : `onclick="renderTree('${data["Nama Sendiri"]}')"`;
+            const clickAction = isSpouse ? '' : `onclick="reCenterTree('${data["Nama Sendiri"]}')"`;
 
             return `
                 <div class="card" ${clickAction}>
@@ -375,8 +308,8 @@
                     <div class="title">${data["Gelaran"] || ''}</div>
                     <div class="details">
                         <span class="${statusClass}">${data["Status hidupan"] || ''}</span><br>
-                        Phone: ${data["No Phone"] || '-'}<br>
-                        Lahir: ${data["Tarikh Lahir"] ? new Date(data["Tarikh Lahir"]).toLocaleDateString() : '-'}
+                        ${data["No Phone"] || '-'}<br>
+                        ${data["Tarikh Lahir"] ? new Date(data["Tarikh Lahir"]).toLocaleDateString() : '-'}
                     </div>
                 </div>
             `;
@@ -384,12 +317,111 @@
 
         function resetTree() {
             if(rawData.length > 0) {
-                renderTree(rawData[0]["Nama Sendiri"]); // Reset to absolute top
+                reCenterTree(rawData[0]["Nama Sendiri"]);
             }
         }
+
+        // Wrapper to re-render and fit
+        function reCenterTree(name) {
+            renderTree(name);
+            // Optional: reset view to center, or keep current zoom? 
+            // Let's fit to screen to orient the user
+            setTimeout(fitToScreen, 100);
+        }
+
+        // --- PAN AND ZOOM LOGIC ---
+
+        function setTransform() {
+            treeLayer.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+        }
+
+        function zoomIn() {
+            scale *= 1.2;
+            setTransform();
+        }
+
+        function zoomOut() {
+            scale /= 1.2;
+            setTransform();
+        }
+
+        function fitToScreen() {
+            // Get dimensions of the tree content
+            const treeContent = document.getElementById('treeContainer');
+            const contentWidth = treeContent.offsetWidth;
+            const contentHeight = treeContent.offsetHeight;
+            
+            // Get dimensions of the viewport
+            const viewWidth = viewport.offsetWidth;
+            const viewHeight = viewport.offsetHeight;
+
+            // Calculate Scale to fit (with some padding)
+            const scaleX = (viewWidth - 40) / contentWidth;
+            const scaleY = (viewHeight - 100) / contentHeight;
+            scale = Math.min(scaleX, scaleY, 1); // Do not zoom in more than 100% automatically
+
+            // Center it
+            pointX = (viewWidth - contentWidth * scale) / 2;
+            pointY = 20; // Start slightly from top
+
+            setTransform();
+        }
+
+        // Mouse Drag to Pan
+        viewport.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            startX = e.clientX - pointX;
+            startY = e.clientY - pointY;
+            panning = true;
+        });
+
+        viewport.addEventListener('mousemove', (e) => {
+            if (!panning) return;
+            e.preventDefault();
+            pointX = e.clientX - startX;
+            pointY = e.clientY - startY;
+            setTransform();
+        });
+
+        viewport.addEventListener('mouseup', () => { panning = false; });
+        viewport.addEventListener('mouseleave', () => { panning = false; });
+
+        // Touch Drag for Mobile
+        viewport.addEventListener('touchstart', (e) => {
+            if(e.touches.length === 1) {
+                startX = e.touches[0].clientX - pointX;
+                startY = e.touches[0].clientY - pointY;
+                panning = true;
+            }
+        });
+
+        viewport.addEventListener('touchmove', (e) => {
+            if(e.touches.length === 1 && panning) {
+                // e.preventDefault(); // Uncomment if you want to block standard scroll completely
+                pointX = e.touches[0].clientX - startX;
+                pointY = e.touches[0].clientY - startY;
+                setTransform();
+            }
+        });
+
+        viewport.addEventListener('touchend', () => { panning = false; });
+
+        // Mouse Wheel Zoom
+        viewport.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const xs = (e.clientX - pointX) / scale;
+            const ys = (e.clientY - pointY) / scale;
+            const delta = -e.deltaY;
+            
+            (delta > 0) ? (scale *= 1.1) : (scale /= 1.1);
+            
+            pointX = e.clientX - xs * scale;
+            pointY = e.clientY - ys * scale;
+
+            setTransform();
+        }, { passive: false });
 
         init();
     </script>
 </body>
-
 </html>
