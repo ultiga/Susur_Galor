@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Susur Galur Form</title>
+    <style>
+        :root {
+            --primary-blue: #1565c0;
+            --light-blue: #e3f2fd;
+            --white: #ffffff;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--light-blue);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            background: var(--white);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin: 0 auto;
+            border-top: 5px solid var(--primary-blue);
+        }
+
+        h2 {
+            color: var(--primary-blue);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 0.9em;
+            color: #333;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input, select {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+
+        #spouseSection {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #0d47a1;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+        }
+
+        #message {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Data Susur Galur</h2>
+    <form id="familyForm">
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label>Nama Sendiri</label>
+                <input type="text" name="namaSendiri" required>
+            </div>
+            <div class="form-group">
+                <label>Bin / Binti Sendiri</label>
+                <input type="text" name="binSendiri" required>
+            </div>
+            <div class="form-group">
+                <label>Nama Ayah / Ibu</label>
+                <input type="text" name="namaAyah" placeholder="Parent used for lineage" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Tarikh Lahir</label>
+                <input type="date" name="tarikhLahir">
+            </div>
+            <div class="form-group">
+                <label>Gelaran</label>
+                <input type="text" name="gelaran">
+            </div>
+            <div class="form-group">
+                <label>Status Hidup</label>
+                <select name="statusHidup">
+                    <option value="Hidup">Hidup</option>
+                    <option value="Meninggal">Meninggal</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>No Phone</label>
+                <input type="tel" name="noPhone">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Status Perkahwinan</label>
+                <select name="statusPerkahwinan" id="statusPerkahwinan" onchange="toggleSpouse()">
+                    <option value="Bujang">Bujang</option>
+                    <option value="Berkahwin">Berkahwin</option>
+                    <option value="Cerai">Cerai</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="spouseSection" style="display:none;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nama Pasangan</label>
+                    <input type="text" name="namaPasangan">
+                </div>
+                <div class="form-group">
+                    <label>Bin/Binti Pasangan</label>
+                    <input type="text" name="binPasangan">
+                </div>
+                <div class="form-group">
+                    <label>Nama Ayah Pasangan</label>
+                    <input type="text" name="namaAyahPasangan">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Gambar (Upload)</label>
+                <input type="file" id="imageFile" accept="image/*">
+            </div>
+        </div>
+
+        <button type="submit" id="submitBtn">Submit Data</button>
+        <div id="message"></div>
+    </form>
+</div>
+
+<script>
+    // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxhE4e96J9RkBpFe1wB_ml1vxcARdxPAQC0ef1zEJ1LcDjK9n0vHsurlLN1DXCUsmTq/exec'; 
+
+    function toggleSpouse() {
+        const status = document.getElementById('statusPerkahwinan').value;
+        const section = document.getElementById('spouseSection');
+        if (status === 'Bujang') {
+            section.style.display = 'none';
+        } else {
+            section.style.display = 'block';
+        }
+    }
+
+    document.getElementById('familyForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        const msg = document.getElementById('message');
+        
+        btn.disabled = true;
+        btn.textContent = 'Submitting...';
+        msg.textContent = '';
+
+        // Collect Form Data
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        // Handle Image Base64 conversion
+        const fileInput = document.getElementById('imageFile');
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = async function() {
+                data.image = reader.result; // Base64 string
+                data.imageName = file.name;
+                await sendData(data);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            await sendData(data);
+        }
+    });
+
+    async function sendData(jsonData) {
+        const btn = document.getElementById('submitBtn');
+        const msg = document.getElementById('message');
+
+        try {
+            // Note: 'no-cors' mode is used because GAS often doesn't return CORS headers for POST.
+            // With 'no-cors', we can send data but cannot read the specific JSON response.
+            // However, we can assume success if no network error occurs.
+            
+            await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify(jsonData)
+            });
+
+            msg.style.color = 'green';
+            msg.textContent = 'Data submitted successfully! Email sent and saved to Sheet.';
+            document.getElementById('familyForm').reset();
+            toggleSpouse(); // Reset visibility
+        } catch (error) {
+            console.error(error);
+            msg.style.color = 'red';
+            msg.textContent = 'Error submitting data.';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Submit Data';
+        }
+    }
+</script>
+
+</body>
+</html>

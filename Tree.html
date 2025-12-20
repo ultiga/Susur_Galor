@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Tree Visualization</title>
+    <style>
+        :root {
+            --bg-color: #f0f4f0;
+            --tree-line: #1b5e20;
+            --card-bg: #ffffff;
+            --card-border: #2e7d32;
+            --text-main: #1b5e20;
+            --text-sub: #4caf50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--text-main);
+            margin-bottom: 10px;
+        }
+
+        #controls {
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: var(--tree-line);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background-color: #144a18;
+        }
+
+        /* Tree CSS Logic */
+        .tree {
+            display: flex;
+            justify-content: center;
+            padding-top: 20px;
+            overflow-x: auto;
+        }
+
+        .tree ul {
+            padding-top: 20px;
+            position: relative;
+            transition: all 0.5s;
+            display: flex;
+            justify-content: center;
+        }
+
+        .tree li {
+            float: left;
+            text-align: center;
+            list-style-type: none;
+            position: relative;
+            padding: 20px 5px 0 5px;
+        }
+
+        /* Connectors */
+        .tree li::before, .tree li::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 50%;
+            border-top: 2px solid var(--tree-line);
+            width: 50%;
+            height: 20px;
+        }
+
+        .tree li::after {
+            right: auto;
+            left: 50%;
+            border-left: 2px solid var(--tree-line);
+        }
+
+        .tree li:only-child::after, .tree li:only-child::before {
+            display: none;
+        }
+
+        .tree li:only-child {
+            padding-top: 0;
+        }
+
+        .tree li:first-child::before, .tree li:last-child::after {
+            border: 0 none;
+        }
+
+        .tree li:last-child::before {
+            border-right: 2px solid var(--tree-line);
+            border-radius: 0 5px 0 0;
+        }
+
+        .tree li:first-child::after {
+            border-radius: 5px 0 0 0;
+        }
+
+        .tree ul ul::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            border-left: 2px solid var(--tree-line);
+            width: 0;
+            height: 20px;
+        }
+
+        /* Member Card */
+        .member-container {
+            display: inline-flex;
+            gap: 10px;
+            background: rgba(255,255,255,0.5);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px dashed var(--tree-line);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 8px;
+            padding: 10px;
+            width: 160px;
+            display: inline-block;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        .card img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--tree-line);
+            margin-bottom: 5px;
+            background: #eee;
+        }
+
+        .card h3 {
+            margin: 5px 0;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+        
+        .card .title { font-size: 11px; font-weight: bold; color: var(--text-sub); }
+        .card .details { font-size: 10px; color: #555; line-height: 1.4; }
+        .card .status-dead { color: red; }
+        .card .status-alive { color: green; }
+
+    </style>
+</head>
+<body>
+
+    <h1 id="mainTitle">Family Tree</h1>
+    <div id="controls">
+        <button onclick="resetTree()">Reset to Top Lineage</button>
+    </div>
+    
+    <div id="loading">Loading Data...</div>
+    <div class="tree" id="treeContainer"></div>
+
+    <script>
+        // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxhE4e96J9RkBpFe1wB_ml1vxcARdxPAQC0ef1zEJ1LcDjK9n0vHsurlLN1DXCUsmTq/exec'; 
+
+        let rawData = [];
+        let rootName = null;
+
+        async function init() {
+            try {
+                const response = await fetch(API_URL);
+                rawData = await response.json();
+                document.getElementById('loading').style.display = 'none';
+                
+                // Find the absolute root (someone with no father listed in the dataset, or the first one)
+                // For this logic, we will look for unique "Nama Ayah" logic or default to the oldest.
+                // Assuming the first entry or specific logic. 
+                // Let's find unique roots.
+                
+                // Set default root to the first person in the sheet or specific logic
+                if(rawData.length > 0) {
+                   rootName = rawData[0]["Nama Sendiri"]; 
+                   renderTree(rootName);
+                }
+            } catch (error) {
+                document.getElementById('loading').textContent = "Error loading data: " + error.message;
+            }
+        }
+
+        function renderTree(focusName) {
+            const container = document.getElementById('treeContainer');
+            container.innerHTML = '';
+            
+            // Filter: If focusName is selected, we show them as root.
+            // But we need to calculate total descendants displayed.
+            
+            const treeHtml = buildHierarchyHTML(focusName);
+            
+            const ul = document.createElement('ul');
+            ul.innerHTML = treeHtml;
+            container.appendChild(ul);
+
+            // Update Title
+            const count = container.getElementsByClassName('card').length;
+            document.getElementById('mainTitle').textContent = `Family tree of "${focusName}" (${count} displayed)`;
+        }
+
+        function buildHierarchyHTML(personName) {
+            const person = rawData.find(p => p["Nama Sendiri"] === personName);
+            if (!person) return '';
+
+            // Find Children: People whose "Nama Ayah / Ibu" matches this person's "Nama Sendiri"
+            const children = rawData.filter(p => p["Nama Ayah / Ibu"] === person["Nama Sendiri"]);
+
+            let html = `<li>
+                <div class="member-container">
+                    ${createCard(person)}
+                    ${getSpouseCard(person)}
+                </div>`;
+
+            if (children.length > 0) {
+                html += '<ul>';
+                children.forEach(child => {
+                    html += buildHierarchyHTML(child["Nama Sendiri"]);
+                });
+                html += '</ul>';
+            }
+
+            html += '</li>';
+            return html;
+        }
+
+        function getSpouseCard(person) {
+            const spouseName = person["Nama Pasangan"];
+            if(!spouseName) return '';
+
+            // Check if spouse exists as a data entry row
+            const spouseData = rawData.find(p => p["Nama Sendiri"] === spouseName);
+            
+            if (spouseData) {
+                return createCard(spouseData, true);
+            } else {
+                // If spouse is mentioned but has no own row, create a dummy card
+                return `<div class="card">
+                    <img src="https://via.placeholder.com/80?text=No+Img" alt="Spouse">
+                    <h3>${spouseName}</h3>
+                    <div class="title">Pasangan</div>
+                </div>`;
+            }
+        }
+
+        function createCard(data, isSpouse = false) {
+            const statusClass = (data["Status hidupan"] || '').toLowerCase().includes('meninggal') ? 'status-dead' : 'status-alive';
+            const imgUrl = data["URL Gambar"] && data["URL Gambar"].startsWith('http') ? data["URL Gambar"] : 'https://via.placeholder.com/80?text=No+Img';
+            
+            // On click logic: If it's not a spouse card, re-root.
+            const clickAction = isSpouse ? '' : `onclick="renderTree('${data["Nama Sendiri"]}')"`;
+
+            return `
+                <div class="card" ${clickAction}>
+                    <img src="${imgUrl}" alt="Photo">
+                    <h3>${data["Nama Sendiri"]}</h3>
+                    <div class="title">${data["Gelaran"] || ''}</div>
+                    <div class="details">
+                        <span class="${statusClass}">${data["Status hidupan"] || ''}</span><br>
+                        Phone: ${data["No Phone"] || '-'}<br>
+                        Lahir: ${data["Tarikh Lahir"] ? new Date(data["Tarikh Lahir"]).toLocaleDateString() : '-'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function resetTree() {
+            if(rawData.length > 0) {
+                renderTree(rawData[0]["Nama Sendiri"]); // Reset to absolute top
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
