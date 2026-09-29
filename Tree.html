@@ -6,12 +6,13 @@
     <title>Family Tree Visualization</title>
     <style>
         :root {
-            --bg-color: #f0f4f0;
-            --tree-line: #1b5e20;
+            /* Dark Green and White Theme */
+            --bg-color: #f4f8f4;
+            --tree-line: #004d00;
             --card-bg: #ffffff;
-            --card-border: #2e7d32;
-            --text-main: #1b5e20;
-            --text-sub: #4caf50;
+            --card-border: #004d00;
+            --text-main: #003300;
+            --text-sub: #2e7d32;
         }
 
         body {
@@ -19,7 +20,7 @@
             background-color: var(--bg-color);
             margin: 0;
             padding: 0;
-            overflow: hidden; 
+            overflow: hidden;
             height: 100vh;
             width: 100vw;
             display: flex;
@@ -28,24 +29,30 @@
 
         header {
             background: white;
-            padding: 10px;
+            padding: 15px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             z-index: 100;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 3px solid var(--tree-line);
         }
 
-        h1 { color: var(--text-main); margin: 0; font-size: 18px; }
+        h1 {
+            color: var(--text-main);
+            margin: 0;
+            font-size: 20px;
+        }
 
         button {
             background-color: var(--tree-line);
             color: white;
             border: none;
-            padding: 8px 15px;
+            padding: 10px 18px;
             cursor: pointer;
             border-radius: 5px;
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: bold;
         }
 
         .zoom-controls {
@@ -72,11 +79,11 @@
 
         #viewport {
             flex-grow: 1;
-            overflow: hidden; 
+            overflow: hidden;
             cursor: grab;
             position: relative;
             background-image: radial-gradient(#ccc 1px, transparent 1px);
-            background-size: 20px 20px; 
+            background-size: 20px 20px;
         }
 
         #viewport:active { cursor: grabbing; }
@@ -85,15 +92,15 @@
             position: absolute;
             top: 0;
             left: 0;
-            transform-origin: 0 0; 
-            transition: transform 0.1s linear; 
+            transform-origin: 0 0;
+            transition: transform 0.1s linear;
         }
 
         .tree {
             display: flex;
             justify-content: center;
-            padding: 50px; 
-            width: max-content; 
+            padding: 50px;
+            width: max-content;
         }
 
         .tree ul {
@@ -144,49 +151,48 @@
 
         .member-container {
             display: inline-flex;
-            gap: 10px;
-            background: rgba(255,255,255,0.5);
+            gap: 15px;
+            background: rgba(255,255,255,0.7);
             padding: 10px;
             border-radius: 10px;
-            border: 1px dashed var(--tree-line);
+            border: 2px dashed var(--tree-line);
         }
 
         .card {
             background: var(--card-bg);
             border: 2px solid var(--card-border);
             border-radius: 8px;
-            padding: 10px;
-            width: 170px;
+            padding: 12px;
+            width: 180px;
             display: inline-block;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            cursor: pointer;
             position: relative;
             text-align: left;
         }
 
-        .card-img-container { text-align: center; }
         .card img {
             width: 80px;
             height: 80px;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid var(--tree-line);
-            margin-bottom: 5px;
+            margin: 0 auto 10px auto;
+            display: block;
             background: #eee;
+            cursor: pointer;
+            transition: transform 0.2s;
         }
 
-        .card h3 { margin: 5px 0; font-size: 13px; color: var(--text-main); text-align: center;}
-        .card .title { font-size: 11px; font-weight: bold; color: var(--text-sub); text-align: center; margin-bottom: 5px;}
-        .card .details { font-size: 10px; color: #555; line-height: 1.4; border-top: 1px solid #ddd; padding-top: 5px; }
-        
-        .status-badge { font-weight: bold; display: inline-block; padding: 2px 5px; border-radius: 3px; font-size: 9px; margin-bottom: 3px;}
-        .status-dead { background-color: #ffebee; color: #c62828; }
-        .status-alive { background-color: #e8f5e9; color: #2e7d32; }
-        
-        .row-detail { display: flex; margin-bottom: 2px; }
-        .row-detail span:first-child { width: 50px; font-weight: bold; }
+        .card img:hover { transform: scale(1.1); }
+        .card h3 { margin: 5px 0; font-size: 15px; color: var(--text-main); text-align: center; }
+        .card .title { font-size: 12px; font-weight: bold; color: var(--text-sub); text-align: center; margin-bottom: 8px;}
+        .card .details { font-size: 11px; color: #333; line-height: 1.5; }
+        .card .status-dead { color: #d32f2f; font-weight: bold; }
+        .card .status-alive { color: var(--tree-line); font-weight: bold; }
+        .card a { color: #1976d2; text-decoration: none; }
+        .card a:hover { text-decoration: underline; }
 
-        #loading { padding: 20px; text-align: center; font-weight: bold; }
+        #loading { padding: 20px; text-align: center; font-weight: bold; font-size: 18px; color: var(--tree-line);}
 
     </style>
 </head>
@@ -211,11 +217,11 @@
     </div>
 
     <script>
-        // REPLACE WITH YOUR ACTUAL DEPLOYED WEB APP URL
-        const API_URL = 'https://script.google.com/macros/s/AKfycbyCCHhhLiRzPOXf8c0Dx0UcRms2aqzW_l846RhFVLJy2C_sIVEyOAKbpsI1biINoH0g/exec'; 
+        // REPLACE WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzm7WH7JriMMxmFJtmHnEeHX-oL_tvBjqei6Vker_Of-yXI4koggiMz8Os_vdfktttv/exec'; 
 
         let rawData = [];
-        let totalPersonsDisplayed = 0;
+        let totalPersons = 0;
         
         let scale = 1;
         let panning = false;
@@ -233,9 +239,6 @@
                 if(rawData.length > 0) {
                    renderTree(rawData[0]["Nama Sendiri"]);
                    setTimeout(fitToScreen, 500); 
-                } else {
-                    document.getElementById('loading').textContent = "No data found in Sheet.";
-                    document.getElementById('loading').style.display = 'block';
                 }
             } catch (error) {
                 document.getElementById('loading').textContent = "Error: " + error.message;
@@ -243,24 +246,21 @@
         }
 
         function renderTree(focusName) {
-            totalPersonsDisplayed = 0; 
             const container = document.getElementById('treeContainer');
             container.innerHTML = '';
+            totalPersons = 0; 
             
             const treeHtml = buildHierarchyHTML(focusName);
             const ul = document.createElement('ul');
             ul.innerHTML = treeHtml;
             container.appendChild(ul);
 
-            document.getElementById('mainTitle').textContent = `Family tree of "${focusName}" - Total: ${totalPersonsDisplayed} persons`;
+            document.getElementById('mainTitle').textContent = `Family tree of "${focusName}" - Total Persons: ${totalPersons}`;
         }
 
         function buildHierarchyHTML(personName) {
             const person = rawData.find(p => p["Nama Sendiri"] === personName);
             if (!person) return '';
-            
-            totalPersonsDisplayed++;
-            
             const children = rawData.filter(p => p["Nama Ayah / Ibu"] === person["Nama Sendiri"]);
 
             let html = `<li>
@@ -283,55 +283,44 @@
             if(!spouseName) return '';
             const spouseData = rawData.find(p => p["Nama Sendiri"] === spouseName);
             
-            if (spouseData) {
-                totalPersonsDisplayed++;
-                return createCard(spouseData, true);
-            }
+            if (spouseData) return createCard(spouseData, true);
             
-            totalPersonsDisplayed++;
+            // Render basic card if spouse data not explicitly in main rows
+            totalPersons++;
             return `<div class="card">
-                    <div class="card-img-container">
-                        <img src="https://via.placeholder.com/80?text=No+Img" alt="Spouse">
-                    </div>
+                    <img src="https://via.placeholder.com/80?text=No+Img" alt="Spouse" onclick="reCenterTree('${spouseName}')">
                     <h3>${spouseName}</h3>
-                    <div class="title">Pasangan</div>
+                    <div class="title">Pasangan kepada ${person["Nama Sendiri"]}</div>
                 </div>`;
         }
 
         function createCard(data, isSpouse = false) {
-            const statusVal = data["Status Hidup"] || data["Status hidupan"] || '';
-            const isDead = statusVal.toLowerCase().includes('meninggal');
+            totalPersons++;
+            const isDead = (data["Status hidupan"] || '').toLowerCase().includes('meninggal');
             const statusClass = isDead ? 'status-dead' : 'status-alive';
             const imgUrl = data["URL Gambar"] && data["URL Gambar"].startsWith('http') ? data["URL Gambar"] : 'https://via.placeholder.com/80?text=No+Img';
-            const clickAction = isSpouse ? '' : `onclick="reCenterTree('${data["Nama Sendiri"]}')"`;
-
-            const formatDate = (dateStr) => {
-                if(!dateStr) return '-';
-                const d = new Date(dateStr);
-                return isNaN(d) ? dateStr : d.toLocaleDateString();
-            };
-
-            let extraFields = '';
+            
+            let additionalFields = '';
+            if (data["Lokasi Rumah"]) {
+                additionalFields += `📍 <a href="${data["Lokasi Rumah"]}" target="_blank">Lokasi Rumah</a><br>`;
+            }
             if (isDead) {
-                extraFields = `
-                    <div class="row-detail"><span>Wafat:</span> <span>${formatDate(data["Tarikh Kematian"])}</span></div>
-                    <div class="row-detail"><span>Kubur:</span> <span>${data["Lokasi Kubur"] || '-'}</span></div>
-                `;
+                additionalFields += `💀 <b>Kematian:</b> ${data["Tarikh Kematian"] ? new Date(data["Tarikh Kematian"]).toLocaleDateString() : '-'}<br>`;
+                if (data["Lokasi Kubur"]) {
+                    additionalFields += `🪦 <a href="${data["Lokasi Kubur"]}" target="_blank">Lokasi Kubur</a><br>`;
+                }
             }
 
             return `
-                <div class="card" ${clickAction}>
-                    <div class="card-img-container">
-                        <img src="${imgUrl}" alt="Photo">
-                    </div>
-                    <h3>${data["Nama Sendiri"] || '-'}</h3>
+                <div class="card">
+                    <img src="${imgUrl}" alt="Photo" onclick="reCenterTree('${data["Nama Sendiri"]}')" title="Click to make root">
+                    <h3>${data["Nama Sendiri"]}</h3>
                     <div class="title">${data["Gelaran"] || ''}</div>
                     <div class="details">
-                        <div style="text-align: center;"><span class="status-badge ${statusClass}">${statusVal || 'Tidak Diketahui'}</span></div>
-                        <div class="row-detail"><span>Lahir:</span> <span>${formatDate(data["Tarikh Lahir"])}</span></div>
-                        <div class="row-detail"><span>Tel:</span> <span>${data["No Phone"] || '-'}</span></div>
-                        <div class="row-detail"><span>Rumah:</span> <span>${data["Lokasi Rumah"] || '-'}</span></div>
-                        ${extraFields}
+                        <b>Status:</b> <span class="${statusClass}">${data["Status hidupan"] || 'Tidak Diketahui'}</span><br>
+                        <b>Phone:</b> ${data["No Phone"] || '-'}<br>
+                        <b>Lahir:</b> ${data["Tarikh Lahir"] ? new Date(data["Tarikh Lahir"]).toLocaleDateString() : '-'}<br>
+                        ${additionalFields}
                     </div>
                 </div>
             `;
@@ -348,7 +337,6 @@
             setTimeout(fitToScreen, 100);
         }
 
-        // --- PAN AND ZOOM LOGIC ---
         function setTransform() { treeLayer.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`; }
         function zoomIn() { scale *= 1.2; setTransform(); }
         function zoomOut() { scale /= 1.2; setTransform(); }
@@ -360,18 +348,16 @@
             const viewWidth = viewport.offsetWidth;
             const viewHeight = viewport.offsetHeight;
 
-            if(contentWidth === 0) return; // Not rendered yet
-
             const scaleX = (viewWidth - 40) / contentWidth;
             const scaleY = (viewHeight - 100) / contentHeight;
             scale = Math.min(scaleX, scaleY, 1); 
 
             pointX = (viewWidth - contentWidth * scale) / 2;
             pointY = 20; 
-
             setTransform();
         }
 
+        // Event Listeners for Panning and Zooming
         viewport.addEventListener('mousedown', (e) => {
             e.preventDefault();
             startX = e.clientX - pointX;
@@ -405,6 +391,7 @@
                 setTransform();
             }
         });
+
         viewport.addEventListener('touchend', () => { panning = false; });
 
         viewport.addEventListener('wheel', (e) => {
@@ -412,9 +399,7 @@
             const xs = (e.clientX - pointX) / scale;
             const ys = (e.clientY - pointY) / scale;
             const delta = -e.deltaY;
-            
             (delta > 0) ? (scale *= 1.1) : (scale /= 1.1);
-            
             pointX = e.clientX - xs * scale;
             pointY = e.clientY - ys * scale;
             setTransform();
