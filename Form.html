@@ -6,6 +6,7 @@
     <title>Data Susur Galur Form</title>
     <style>
         :root {
+            /* Blue and White Theme */
             --primary-blue: #1565c0;
             --light-blue: #e3f2fd;
             --white: #ffffff;
@@ -54,19 +55,19 @@
             font-weight: bold;
         }
 
-        input, select, textarea {
+        input, select {
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 14px;
         }
 
-        input:focus, select:focus, textarea:focus {
+        input:focus, select:focus {
             outline: none;
             border-color: var(--primary-blue);
         }
 
-        .section-box {
+        #spouseSection, #deathSection {
             background-color: #f8f9fa;
             padding: 15px;
             border-radius: 5px;
@@ -86,9 +87,19 @@
             transition: background 0.3s;
         }
 
-        button:hover { background-color: #0d47a1; }
-        button:disabled { background-color: #ccc; }
-        #message { margin-top: 15px; text-align: center; font-weight: bold; }
+        button:hover {
+            background-color: #0d47a1;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+        }
+
+        #message {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -97,7 +108,7 @@
     <h2>Data Susur Galur</h2>
     <form id="familyForm">
         
-        <!-- ROW 1: Nama Sendiri, Bin / Binti sendiri, Nama Ayah / Ibu -->
+        <!-- Row 1: Self Details -->
         <div class="form-row">
             <div class="form-group">
                 <label>Nama Sendiri</label>
@@ -109,7 +120,7 @@
             </div>
             <div class="form-group">
                 <label>Nama Ayah / Ibu</label>
-                <input type="text" name="namaAyah" placeholder="Nama ayah atau ibu dari darah Utama" required>
+                <input type="text" name="namaAyah" required>
             </div>
         </div>
 
@@ -127,39 +138,43 @@
                 <input type="text" name="noPhone" placeholder="+60 1x xxxx xxxx" required>
             </div>
         </div>
-
+        
         <div class="form-row">
             <div class="form-group">
-                <label>Lokasi Rumah</label>
-                <input type="text" name="lokasiRumah" placeholder="Alamat atau nama lokasi">
+                <label>Lokasi Rumah (URL)</label>
+                <input type="url" name="lokasiRumah" placeholder="https://maps.google.com/...">
+            </div>
+            <div class="form-group">
+                <label>Gambar (Upload)</label>
+                <input type="file" id="imageFile" accept="image/*" required>
             </div>
         </div>
 
-        <!-- STATUS HIDUP SECTION -->
+        <!-- Life Status -->
         <div class="form-row">
             <div class="form-group">
                 <label>Status Hidup</label>
-                <select name="statusHidup" id="statusHidup" onchange="toggleDeathFields()">
+                <select name="statusHidup" id="statusHidup" onchange="toggleDeath()">
                     <option value="Hidup">Hidup</option>
                     <option value="Meninggal">Meninggal</option>
                 </select>
             </div>
         </div>
 
-        <div id="deathSection" class="section-box" style="display:none;">
+        <div id="deathSection" style="display:none;">
             <div class="form-row">
                 <div class="form-group">
                     <label>Tarikh Kematian</label>
                     <input type="date" name="tarikhKematian">
                 </div>
                 <div class="form-group">
-                    <label>Lokasi Kubur</label>
-                    <input type="text" name="lokasiKubur">
+                    <label>Lokasi Kubur (URL)</label>
+                    <input type="url" name="lokasiKubur" placeholder="https://maps.google.com/...">
                 </div>
             </div>
         </div>
 
-        <!-- STATUS PERKAHWINAN SECTION -->
+        <!-- Marital Status -->
         <div class="form-row">
             <div class="form-group">
                 <label>Status Perkahwinan</label>
@@ -171,8 +186,8 @@
             </div>
         </div>
 
-        <!-- ROW 2: Pasangan Details -->
-        <div id="spouseSection" class="section-box" style="display:none;">
+        <!-- Row 2: Spouse Details -->
+        <div id="spouseSection" style="display:none;">
             <div class="form-row">
                 <div class="form-group">
                     <label>Nama Pasangan</label>
@@ -189,30 +204,33 @@
             </div>
         </div>
 
-        <div class="form-row">
-            <div class="form-group">
-                <label>Gambar (Upload)</label>
-                <input type="file" id="imageFile" accept="image/*">
-            </div>
-        </div>
-
         <button type="submit" id="submitBtn">Submit Data</button>
         <div id="message"></div>
     </form>
 </div>
 
 <script>
-    // REPLACE WITH YOUR ACTUAL DEPLOYED WEB APP URL
-    const API_URL = 'https://script.google.com/macros/s/AKfycbyCCHhhLiRzPOXf8c0Dx0UcRms2aqzW_l846RhFVLJy2C_sIVEyOAKbpsI1biINoH0g/exec'; 
+    // REPLACE WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzm7WH7JriMMxmFJtmHnEeHX-oL_tvBjqei6Vker_Of-yXI4koggiMz8Os_vdfktttv/exec'; 
 
     function toggleSpouse() {
         const status = document.getElementById('statusPerkahwinan').value;
-        document.getElementById('spouseSection').style.display = status === 'Bujang' ? 'none' : 'block';
+        const section = document.getElementById('spouseSection');
+        if (status === 'Bujang') {
+            section.style.display = 'none';
+        } else {
+            section.style.display = 'block';
+        }
     }
 
-    function toggleDeathFields() {
+    function toggleDeath() {
         const status = document.getElementById('statusHidup').value;
-        document.getElementById('deathSection').style.display = status === 'Meninggal' ? 'block' : 'none';
+        const section = document.getElementById('deathSection');
+        if (status === 'Meninggal') {
+            section.style.display = 'block';
+        } else {
+            section.style.display = 'none';
+        }
     }
 
     document.getElementById('familyForm').addEventListener('submit', async function(e) {
@@ -257,16 +275,17 @@
             msg.textContent = 'Data submitted successfully! Email sent and saved to Sheet.';
             document.getElementById('familyForm').reset();
             toggleSpouse(); 
-            toggleDeathFields();
+            toggleDeath();
         } catch (error) {
             console.error(error);
             msg.style.color = 'red';
-            msg.textContent = 'Error submitting data.';
+            msg.textContent = 'Error submitting data. Please ensure the Apps Script URL is correct.';
         } finally {
             btn.disabled = false;
             btn.textContent = 'Submit Data';
         }
     }
 </script>
+
 </body>
 </html>
