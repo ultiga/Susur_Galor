@@ -19,14 +19,13 @@
             background-color: var(--bg-color);
             margin: 0;
             padding: 0;
-            overflow: hidden; /* Prevent default browser scroll we use custom pan */
+            overflow: hidden; 
             height: 100vh;
             width: 100vw;
             display: flex;
             flex-direction: column;
         }
 
-        /* Top Bar */
         header {
             background: white;
             padding: 10px;
@@ -37,11 +36,7 @@
             align-items: center;
         }
 
-        h1 {
-            color: var(--text-main);
-            margin: 0;
-            font-size: 18px;
-        }
+        h1 { color: var(--text-main); margin: 0; font-size: 18px; }
 
         button {
             background-color: var(--tree-line);
@@ -53,7 +48,6 @@
             font-size: 13px;
         }
 
-        /* Zoom Controls (Floating) */
         .zoom-controls {
             position: fixed;
             bottom: 20px;
@@ -76,35 +70,30 @@
             padding: 0;
         }
 
-        /* Viewport Container for Panning */
         #viewport {
             flex-grow: 1;
-            overflow: hidden; /* Hide overflow */
+            overflow: hidden; 
             cursor: grab;
             position: relative;
             background-image: radial-gradient(#ccc 1px, transparent 1px);
-            background-size: 20px 20px; /* Dot grid background */
+            background-size: 20px 20px; 
         }
 
-        #viewport:active {
-            cursor: grabbing;
-        }
+        #viewport:active { cursor: grabbing; }
 
-        /* The Tree Content Layer */
         .tree-layer {
             position: absolute;
             top: 0;
             left: 0;
-            transform-origin: 0 0; /* Scaling happens from top-left */
-            transition: transform 0.1s linear; /* Smooth movement */
+            transform-origin: 0 0; 
+            transition: transform 0.1s linear; 
         }
 
-        /* --- TREE CSS LOGIC --- */
         .tree {
             display: flex;
             justify-content: center;
-            padding: 50px; /* Padding inside the zoomable area */
-            width: max-content; /* Ensure div is as wide as the tree */
+            padding: 50px; 
+            width: max-content; 
         }
 
         .tree ul {
@@ -122,7 +111,6 @@
             padding: 20px 5px 0 5px;
         }
 
-        /* Connectors */
         .tree li::before, .tree li::after {
             content: '';
             position: absolute;
@@ -154,7 +142,6 @@
             height: 20px;
         }
 
-        /* Member Card */
         .member-container {
             display: inline-flex;
             gap: 10px;
@@ -169,13 +156,15 @@
             border: 2px solid var(--card-border);
             border-radius: 8px;
             padding: 10px;
-            width: 160px;
+            width: 170px;
             display: inline-block;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             cursor: pointer;
             position: relative;
+            text-align: left;
         }
 
+        .card-img-container { text-align: center; }
         .card img {
             width: 80px;
             height: 80px;
@@ -186,13 +175,18 @@
             background: #eee;
         }
 
-        .card h3 { margin: 5px 0; font-size: 14px; color: var(--text-main); }
-        .card .title { font-size: 11px; font-weight: bold; color: var(--text-sub); }
-        .card .details { font-size: 10px; color: #555; line-height: 1.4; }
-        .card .status-dead { color: red; }
-        .card .status-alive { color: green; }
+        .card h3 { margin: 5px 0; font-size: 13px; color: var(--text-main); text-align: center;}
+        .card .title { font-size: 11px; font-weight: bold; color: var(--text-sub); text-align: center; margin-bottom: 5px;}
+        .card .details { font-size: 10px; color: #555; line-height: 1.4; border-top: 1px solid #ddd; padding-top: 5px; }
+        
+        .status-badge { font-weight: bold; display: inline-block; padding: 2px 5px; border-radius: 3px; font-size: 9px; margin-bottom: 3px;}
+        .status-dead { background-color: #ffebee; color: #c62828; }
+        .status-alive { background-color: #e8f5e9; color: #2e7d32; }
+        
+        .row-detail { display: flex; margin-bottom: 2px; }
+        .row-detail span:first-child { width: 50px; font-weight: bold; }
 
-        #loading { padding: 20px; text-align: center; }
+        #loading { padding: 20px; text-align: center; font-weight: bold; }
 
     </style>
 </head>
@@ -217,18 +211,15 @@
     </div>
 
     <script>
-        // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
-        const API_URL = 'https://script.google.com/macros/s/AKfycbxhE4e96J9RkBpFe1wB_ml1vxcARdxPAQC0ef1zEJ1LcDjK9n0vHsurlLN1DXCUsmTq/exec'; 
+        // REPLACE WITH YOUR ACTUAL DEPLOYED WEB APP URL
+        const API_URL = 'https://script.google.com/macros/s/AKfycbyCCHhhLiRzPOXf8c0Dx0UcRms2aqzW_l846RhFVLJy2C_sIVEyOAKbpsI1biINoH0g/exec'; 
 
         let rawData = [];
+        let totalPersonsDisplayed = 0;
         
-        // --- ZOOM & PAN VARIABLES ---
         let scale = 1;
         let panning = false;
-        let pointX = 0;
-        let pointY = 0;
-        let startX = 0;
-        let startY = 0;
+        let pointX = 0, pointY = 0, startX = 0, startY = 0;
 
         const viewport = document.getElementById('viewport');
         const treeLayer = document.getElementById('treeLayer');
@@ -241,16 +232,18 @@
                 
                 if(rawData.length > 0) {
                    renderTree(rawData[0]["Nama Sendiri"]);
-                   // Auto fit after a slight delay to allow rendering
                    setTimeout(fitToScreen, 500); 
+                } else {
+                    document.getElementById('loading').textContent = "No data found in Sheet.";
+                    document.getElementById('loading').style.display = 'block';
                 }
             } catch (error) {
                 document.getElementById('loading').textContent = "Error: " + error.message;
             }
         }
 
-        // --- RENDER LOGIC (Same as before) ---
         function renderTree(focusName) {
+            totalPersonsDisplayed = 0; 
             const container = document.getElementById('treeContainer');
             container.innerHTML = '';
             
@@ -259,13 +252,15 @@
             ul.innerHTML = treeHtml;
             container.appendChild(ul);
 
-            const count = container.getElementsByClassName('card').length;
-            document.getElementById('mainTitle').textContent = `Family tree of "${focusName}"`;
+            document.getElementById('mainTitle').textContent = `Family tree of "${focusName}" - Total: ${totalPersonsDisplayed} persons`;
         }
 
         function buildHierarchyHTML(personName) {
             const person = rawData.find(p => p["Nama Sendiri"] === personName);
             if (!person) return '';
+            
+            totalPersonsDisplayed++;
+            
             const children = rawData.filter(p => p["Nama Ayah / Ibu"] === person["Nama Sendiri"]);
 
             let html = `<li>
@@ -288,28 +283,55 @@
             if(!spouseName) return '';
             const spouseData = rawData.find(p => p["Nama Sendiri"] === spouseName);
             
-            if (spouseData) return createCard(spouseData, true);
+            if (spouseData) {
+                totalPersonsDisplayed++;
+                return createCard(spouseData, true);
+            }
+            
+            totalPersonsDisplayed++;
             return `<div class="card">
-                    <img src="https://via.placeholder.com/80?text=No+Img" alt="Spouse">
+                    <div class="card-img-container">
+                        <img src="https://via.placeholder.com/80?text=No+Img" alt="Spouse">
+                    </div>
                     <h3>${spouseName}</h3>
                     <div class="title">Pasangan</div>
                 </div>`;
         }
 
         function createCard(data, isSpouse = false) {
-            const statusClass = (data["Status hidupan"] || '').toLowerCase().includes('meninggal') ? 'status-dead' : 'status-alive';
+            const statusVal = data["Status Hidup"] || data["Status hidupan"] || '';
+            const isDead = statusVal.toLowerCase().includes('meninggal');
+            const statusClass = isDead ? 'status-dead' : 'status-alive';
             const imgUrl = data["URL Gambar"] && data["URL Gambar"].startsWith('http') ? data["URL Gambar"] : 'https://via.placeholder.com/80?text=No+Img';
             const clickAction = isSpouse ? '' : `onclick="reCenterTree('${data["Nama Sendiri"]}')"`;
 
+            const formatDate = (dateStr) => {
+                if(!dateStr) return '-';
+                const d = new Date(dateStr);
+                return isNaN(d) ? dateStr : d.toLocaleDateString();
+            };
+
+            let extraFields = '';
+            if (isDead) {
+                extraFields = `
+                    <div class="row-detail"><span>Wafat:</span> <span>${formatDate(data["Tarikh Kematian"])}</span></div>
+                    <div class="row-detail"><span>Kubur:</span> <span>${data["Lokasi Kubur"] || '-'}</span></div>
+                `;
+            }
+
             return `
                 <div class="card" ${clickAction}>
-                    <img src="${imgUrl}" alt="Photo">
-                    <h3>${data["Nama Sendiri"]}</h3>
+                    <div class="card-img-container">
+                        <img src="${imgUrl}" alt="Photo">
+                    </div>
+                    <h3>${data["Nama Sendiri"] || '-'}</h3>
                     <div class="title">${data["Gelaran"] || ''}</div>
                     <div class="details">
-                        <span class="${statusClass}">${data["Status hidupan"] || ''}</span><br>
-                        ${data["No Phone"] || '-'}<br>
-                        ${data["Tarikh Lahir"] ? new Date(data["Tarikh Lahir"]).toLocaleDateString() : '-'}
+                        <div style="text-align: center;"><span class="status-badge ${statusClass}">${statusVal || 'Tidak Diketahui'}</span></div>
+                        <div class="row-detail"><span>Lahir:</span> <span>${formatDate(data["Tarikh Lahir"])}</span></div>
+                        <div class="row-detail"><span>Tel:</span> <span>${data["No Phone"] || '-'}</span></div>
+                        <div class="row-detail"><span>Rumah:</span> <span>${data["Lokasi Rumah"] || '-'}</span></div>
+                        ${extraFields}
                     </div>
                 </div>
             `;
@@ -321,53 +343,35 @@
             }
         }
 
-        // Wrapper to re-render and fit
         function reCenterTree(name) {
             renderTree(name);
-            // Optional: reset view to center, or keep current zoom? 
-            // Let's fit to screen to orient the user
             setTimeout(fitToScreen, 100);
         }
 
         // --- PAN AND ZOOM LOGIC ---
-
-        function setTransform() {
-            treeLayer.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
-        }
-
-        function zoomIn() {
-            scale *= 1.2;
-            setTransform();
-        }
-
-        function zoomOut() {
-            scale /= 1.2;
-            setTransform();
-        }
+        function setTransform() { treeLayer.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`; }
+        function zoomIn() { scale *= 1.2; setTransform(); }
+        function zoomOut() { scale /= 1.2; setTransform(); }
 
         function fitToScreen() {
-            // Get dimensions of the tree content
             const treeContent = document.getElementById('treeContainer');
             const contentWidth = treeContent.offsetWidth;
             const contentHeight = treeContent.offsetHeight;
-            
-            // Get dimensions of the viewport
             const viewWidth = viewport.offsetWidth;
             const viewHeight = viewport.offsetHeight;
 
-            // Calculate Scale to fit (with some padding)
+            if(contentWidth === 0) return; // Not rendered yet
+
             const scaleX = (viewWidth - 40) / contentWidth;
             const scaleY = (viewHeight - 100) / contentHeight;
-            scale = Math.min(scaleX, scaleY, 1); // Do not zoom in more than 100% automatically
+            scale = Math.min(scaleX, scaleY, 1); 
 
-            // Center it
             pointX = (viewWidth - contentWidth * scale) / 2;
-            pointY = 20; // Start slightly from top
+            pointY = 20; 
 
             setTransform();
         }
 
-        // Mouse Drag to Pan
         viewport.addEventListener('mousedown', (e) => {
             e.preventDefault();
             startX = e.clientX - pointX;
@@ -386,7 +390,6 @@
         viewport.addEventListener('mouseup', () => { panning = false; });
         viewport.addEventListener('mouseleave', () => { panning = false; });
 
-        // Touch Drag for Mobile
         viewport.addEventListener('touchstart', (e) => {
             if(e.touches.length === 1) {
                 startX = e.touches[0].clientX - pointX;
@@ -397,16 +400,13 @@
 
         viewport.addEventListener('touchmove', (e) => {
             if(e.touches.length === 1 && panning) {
-                // e.preventDefault(); // Uncomment if you want to block standard scroll completely
                 pointX = e.touches[0].clientX - startX;
                 pointY = e.touches[0].clientY - startY;
                 setTransform();
             }
         });
-
         viewport.addEventListener('touchend', () => { panning = false; });
 
-        // Mouse Wheel Zoom
         viewport.addEventListener('wheel', (e) => {
             e.preventDefault();
             const xs = (e.clientX - pointX) / scale;
@@ -417,7 +417,6 @@
             
             pointX = e.clientX - xs * scale;
             pointY = e.clientY - ys * scale;
-
             setTransform();
         }, { passive: false });
 
@@ -425,4 +424,3 @@
     </script>
 </body>
 </html>
-
