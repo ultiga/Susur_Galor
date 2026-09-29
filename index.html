@@ -5,80 +5,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Main Dashboard</title>
     <style>
-        /* This ensures the page takes up the full screen height */
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
             font-family: Arial, sans-serif;
+            overflow: hidden; /* Prevents outer scrollbars */
         }
 
-        /* Container to hold the two 'windows' side by side */
+        /* Container arranged vertically */
         .container {
             display: flex;
-            height: 100vh; /* 100% of the viewport height */
+            flex-direction: column;
+            height: 100vh;
         }
 
-        /* Left Side: Navigation Sidebar */
-        .sidebar {
-            width: 100px; /* Fixed width for the menu */
+        /* Top Header Navigation */
+        .topbar {
             background-color: #2c3e50;
             color: white;
-            padding: 20px;
+            padding: 12px 24px;
             box-sizing: border-box;
             display: flex;
-            flex-direction: column;
-            gap: 15px;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+            z-index: 10;
         }
 
-        /* Styling the links */
-        .sidebar a {
+        .topbar h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            padding-right: 10px;
+            border-right: 1px solid #4a627a;
+        }
+
+        /* Nav links grouped horizontally */
+        .nav-links {
+            display: flex;
+            gap: 12px;
+        }
+
+        .nav-links a {
             text-decoration: none;
             color: white;
-            padding: 10px 15px;
+            padding: 8px 16px;
             background-color: #34495e;
             border-radius: 5px;
-            transition: background 0.3s;
+            font-size: 0.95rem;
+            transition: background-color 0.2s ease;
         }
 
-        .sidebar a:hover {
+        .nav-links a:hover {
             background-color: #1abc9c;
         }
 
-        /* Right Side: Content Area */
+        /* Bottom Content Area */
         .main-content {
-            flex-grow: 1; /* Takes up the remaining space */
+            flex: 1; /* Fills remaining vertical space */
             background-color: #ecf0f1;
         }
 
-        /* The iframe acts as the "window" for the external files */
         iframe {
             width: 100%;
             height: 100%;
-            border: none; /* Removes the ugly default border */
+            border: none;
+            display: block;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <div class="sidebar">
+        <!-- Top Navbar -->
+        <header class="topbar">
             <h3>Menu</h3>
-            
-            <a href="Tree.html" target="view_window">View Family Tree</a>
-            
-            <a href="Form.html" target="view_window">Open Input Form</a>
-        </div>
+            <nav class="nav-links">
+                <a href="Tree.html" target="view_window">View Family Tree</a>
+                <a href="Form.html" target="view_window">Open Input Form</a>
+            </nav>
+        </header>
 
-        <div class="main-content">
+        <!-- Bottom Content Window -->
+        <main class="main-content">
             <iframe name="view_window" src="Form.html"></iframe>
-        </div>
+        </main>
     </div>
 
 </body>
-
 </html>
-
-
-
-
