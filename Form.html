@@ -54,19 +54,19 @@
             font-weight: bold;
         }
 
-        input, select {
+        input, select, textarea {
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 14px;
         }
 
-        input:focus, select:focus {
+        input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: var(--primary-blue);
         }
 
-        #spouseSection {
+        .section-box {
             background-color: #f8f9fa;
             padding: 15px;
             border-radius: 5px;
@@ -86,19 +86,9 @@
             transition: background 0.3s;
         }
 
-        button:hover {
-            background-color: #0d47a1;
-        }
-
-        button:disabled {
-            background-color: #ccc;
-        }
-
-        #message {
-            margin-top: 15px;
-            text-align: center;
-            font-weight: bold;
-        }
+        button:hover { background-color: #0d47a1; }
+        button:disabled { background-color: #ccc; }
+        #message { margin-top: 15px; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -107,6 +97,7 @@
     <h2>Data Susur Galur</h2>
     <form id="familyForm">
         
+        <!-- ROW 1: Nama Sendiri, Bin / Binti sendiri, Nama Ayah / Ibu -->
         <div class="form-row">
             <div class="form-group">
                 <label>Nama Sendiri</label>
@@ -132,18 +123,43 @@
                 <input type="text" name="gelaran">
             </div>
             <div class="form-group">
+                <label>No Phone</label>
+                <input type="text" name="noPhone" placeholder="+60 1x xxxx xxxx" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Lokasi Rumah</label>
+                <input type="text" name="lokasiRumah" placeholder="Alamat atau nama lokasi">
+            </div>
+        </div>
+
+        <!-- STATUS HIDUP SECTION -->
+        <div class="form-row">
+            <div class="form-group">
                 <label>Status Hidup</label>
-                <select name="statusHidup">
+                <select name="statusHidup" id="statusHidup" onchange="toggleDeathFields()">
                     <option value="Hidup">Hidup</option>
                     <option value="Meninggal">Meninggal</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>No Phone</label>
-		<input type="text" name="noPhone" placeholder="+60 1x xxxx xxxx" required>
+        </div>
+
+        <div id="deathSection" class="section-box" style="display:none;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Tarikh Kematian</label>
+                    <input type="date" name="tarikhKematian">
+                </div>
+                <div class="form-group">
+                    <label>Lokasi Kubur</label>
+                    <input type="text" name="lokasiKubur">
+                </div>
             </div>
         </div>
 
+        <!-- STATUS PERKAHWINAN SECTION -->
         <div class="form-row">
             <div class="form-group">
                 <label>Status Perkahwinan</label>
@@ -155,7 +171,8 @@
             </div>
         </div>
 
-        <div id="spouseSection" style="display:none;">
+        <!-- ROW 2: Pasangan Details -->
+        <div id="spouseSection" class="section-box" style="display:none;">
             <div class="form-row">
                 <div class="form-group">
                     <label>Nama Pasangan</label>
@@ -185,17 +202,17 @@
 </div>
 
 <script>
-    // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxhE4e96J9RkBpFe1wB_ml1vxcARdxPAQC0ef1zEJ1LcDjK9n0vHsurlLN1DXCUsmTq/exec'; 
+    // REPLACE WITH YOUR ACTUAL DEPLOYED WEB APP URL
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyCCHhhLiRzPOXf8c0Dx0UcRms2aqzW_l846RhFVLJy2C_sIVEyOAKbpsI1biINoH0g/exec'; 
 
     function toggleSpouse() {
         const status = document.getElementById('statusPerkahwinan').value;
-        const section = document.getElementById('spouseSection');
-        if (status === 'Bujang') {
-            section.style.display = 'none';
-        } else {
-            section.style.display = 'block';
-        }
+        document.getElementById('spouseSection').style.display = status === 'Bujang' ? 'none' : 'block';
+    }
+
+    function toggleDeathFields() {
+        const status = document.getElementById('statusHidup').value;
+        document.getElementById('deathSection').style.display = status === 'Meninggal' ? 'block' : 'none';
     }
 
     document.getElementById('familyForm').addEventListener('submit', async function(e) {
@@ -207,18 +224,16 @@
         btn.textContent = 'Submitting...';
         msg.textContent = '';
 
-        // Collect Form Data
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
 
-        // Handle Image Base64 conversion
         const fileInput = document.getElementById('imageFile');
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
             const reader = new FileReader();
             
             reader.onload = async function() {
-                data.image = reader.result; // Base64 string
+                data.image = reader.result; 
                 data.imageName = file.name;
                 await sendData(data);
             };
@@ -233,10 +248,6 @@
         const msg = document.getElementById('message');
 
         try {
-            // Note: 'no-cors' mode is used because GAS often doesn't return CORS headers for POST.
-            // With 'no-cors', we can send data but cannot read the specific JSON response.
-            // However, we can assume success if no network error occurs.
-            
             await fetch(API_URL, {
                 method: 'POST',
                 body: JSON.stringify(jsonData)
@@ -245,7 +256,8 @@
             msg.style.color = 'green';
             msg.textContent = 'Data submitted successfully! Email sent and saved to Sheet.';
             document.getElementById('familyForm').reset();
-            toggleSpouse(); // Reset visibility
+            toggleSpouse(); 
+            toggleDeathFields();
         } catch (error) {
             console.error(error);
             msg.style.color = 'red';
@@ -256,6 +268,5 @@
         }
     }
 </script>
-
 </body>
 </html>
